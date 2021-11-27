@@ -27,16 +27,15 @@ class Blockchain:
         return self.chain[-1]
     
     def proof_of_work(self, previous_proof):
-        new_proof = 1
-        check_proof = False
-        while check_proof is False:
-            hash_operation = hashlib.sha256(str(new_proof**2 - previous_proof**2).encode().hexdigest())
-            if hash_operation[:4] == '0000':
-                check_proof = True
-            else :
-                new_proof += 1
-                
-        return new_proof
+      new_proof = 1
+      check_proof = False
+      while check_proof is False:
+          hash_operation = hashlib.sha256(str(new_proof**2 - previous_proof**2).encode()).hexdigest()
+          if hash_operation[:4] == '0000':
+              check_proof = True
+          else:
+              new_proof += 1
+      return new_proof
     
     def hash(self,block):
         encoded_block = json.dumps(block, sort_keys = True).encode()
@@ -80,5 +79,30 @@ def mine_block():
                 'proof':block['proof'],
                 'previous_hash':block['previous_hash']}
     return jsonify(response), 200
+
+# Getting the bull blockchain 
+@app.route('/get_blockchain' , methods=['GET'])
+
+def get_blockchain():
+    response = {'chain' : blockchain.chain ,
+                'length' : len(blockchain.chain)}
+    return jsonify(response), 200
+
+# Checking if the blockchain is valid 
+@app.route('/check_blockchain_isvalid' , methods=['GET'])
+
+def check_blockchain():
+    chain = blockchain.chain
+    Check_blockchain_status = blockchain.is_chain_valid(chain)
+    if Check_blockchain_status == False :
+        return jsonify({'message' : 'The blockchain is invalid '})
+    else :
+        return jsonify({'message' : 'The blockchain is vlaid '})
+        
+
+# Running the app
+app.run(host = '0.0.0.0',port = 5000)
+ 
+
              
     
