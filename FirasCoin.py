@@ -97,6 +97,9 @@ class Blockchain:
 # Creating a web app 
 app = Flask(__name__)
 
+# Creating an address for the node on port 5000
+node_address = str(uuid4()).replace('-','') 
+
 # Creating Blockchain
 blockchain = Blockchain()
 
@@ -108,12 +111,14 @@ def mine_block():
     previous_proof = previous_block['proof']
     proof = blockchain.proof_of_work(previous_proof)
     previous_hash = blockchain.hash(previous_block)
+    blockchain.add_transaction(sender = node_address , receiver = 'Firas', amount = 1)
     block = blockchain.create_block(proof, previous_hash)
     response = {'message' : 'Congratualtion , you just added your block to the blockchain' ,
                 'index' : block['index'],
                 'timestamp':block['timestamp'],
                 'proof':block['proof'],
-                'previous_hash':block['previous_hash']}
+                'previous_hash':block['previous_hash'],
+                'transactions' : block['transactions']}
     return jsonify(response), 200
 
 # Getting the bull blockchain 
@@ -135,10 +140,48 @@ def check_blockchain():
     else :
         return jsonify({'message' : 'The blockchain is vlaid '}) 
     
+# Adding a new transaction to the blockchain 
+@app.route('/add_transaction' , methods = ['POST'])
+
+def add_transaction():
+    json = request.get_json()
+    transaction_keys = ['sender','receiver','amount']
+    if not all (key in json for key in transaction_keys):
+        return 'Some elements of the transactions are missing', 400
+    index = blockchain.add_transaction(json['sender'],json['receiver'],json['amount'])
+    response = {'message' : f'This transaction will be added to block {index}'}
+    return jsonify(response), 201
+    
+    
 # Decentralizing the blockchain
 
-        
+# Connecting a new node 
+@app.route('/connect_node' , methods = ['POST'])
 
+def connect_node():
+    json = request.get_json()
+    nodes = json.get('nodes')
+    if nodes is None : 
+        return "No node available" , 400
+    for node in nodes :
+        blockchain.add_nodes(node)
+    response = {'message' : 'All the nodes are connected. The Firascoin blockchain now contains the follwing nodes :',
+                'total nodes' : list(blockchain.nodes) }
+    return jsonify(response), 201
+
+#Replacing the chain by the longest chain if needed
+@app.route('/update_blockchain',methods = ['GET'])
+
+def update_blockchain():
+    is_blockchain_replaced = blockchain.replace_chain()
+    if is_blockchain_replaced :
+        return jsonify({'message' : 'The node had diffrent chains so the chain is replaced by the longest one .',
+                        'new_chain' : blockchain.chain }) , 200
+    else :
+        return jsonify({'message' : 'Good . The chain is already the longest one . No changes !',
+                        'actual_chain' : blockchain.chain}) , 200
+    
+    
 # Running the app
 app.run(host = '0.0.0.0',port = 5000)
  
